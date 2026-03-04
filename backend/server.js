@@ -18,7 +18,11 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-    origin: ['https://quanta-pink.vercel.app/'], // Adjust based on where your frontend runs
+    origin: [
+        'https://quanta-pink.vercel.app',
+        'http://localhost:3000',
+        'http://localhost:5173' // Common Vite port
+    ],
     credentials: true
 }));
 app.use(express.json());
@@ -33,7 +37,10 @@ app.use(session({
         collectionName: 'sessions'
     }),
     cookie: {
-        maxAge: 1000 * 60 * 60 * 24 * 31// 31 day
+        maxAge: 1000 * 60 * 60 * 24 * 31, // 31 days
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production', // true if in production
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
     }
 }));
 
