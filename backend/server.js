@@ -18,7 +18,7 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-    origin: ['https://quanta-khaki.vercel.app/'], // Adjust based on where your frontend runs
+    origin: ['https://quanta-pink.vercel.app/'], // Adjust based on where your frontend runs
     credentials: true
 }));
 app.use(express.json());
