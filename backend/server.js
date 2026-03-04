@@ -19,9 +19,9 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors({
     origin: [
-        'https://quanta-phi-two.vercel.app',
+        process.env.FRONTEND_URL,
         'http://localhost:3000',
-        'http://localhost:5173' // Common Vite port
+        'http://localhost:5173'
     ],
     credentials: true
 }));
