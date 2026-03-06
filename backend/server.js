@@ -7,7 +7,6 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
-
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
