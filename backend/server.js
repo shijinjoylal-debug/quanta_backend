@@ -65,10 +65,12 @@ app.get('/', (req, res) => {
 import postRoutes from './routes/posts.js';
 import authRoutes from './routes/auth.js';
 import learningRoutes from './routes/learning.js';
+import geminiRoutes from './routes/gemini.js';
 
 app.use('/api/posts', postRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/learning', learningRoutes);
+app.use('/api/gemini', geminiRoutes);
 
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
