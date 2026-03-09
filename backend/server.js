@@ -69,7 +69,7 @@ import geminiRoutes from './routes/gemini.js';
 app.use('/api/posts', postRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/learning', learningRoutes);
-app.use('/api/gemini', geminiRoutes);
+app.use('/api/gemini/chat', geminiRoutes);
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
