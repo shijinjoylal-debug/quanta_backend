@@ -17,11 +17,24 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-    origin: [
-        process.env.FRONTEND_URL,
-        'http://localhost:3000',
-        'http://localhost:5173'
-    ],
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        // or frontend URL, localhost ports, and 127.0.0.1
+        const allowedOrigins = [
+            process.env.FRONTEND_URL,
+            'http://localhost:3000',
+            'http://localhost:5173',
+            'http://localhost:5500',
+            'http://127.0.0.1:5500',
+        ];
+
+        // Be permissive for local development / file:// protocols where origin is "null"
+        if (!origin || allowedOrigins.includes(origin) || origin === 'null') {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
 }));
 app.use(express.json());
@@ -69,7 +82,7 @@ import geminiRoutes from './routes/gemini.js';
 app.use('/api/posts', postRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/learning', learningRoutes);
-app.use('/api/gemini/chat', geminiRoutes);
+app.use('/api/gemini', geminiRoutes);
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
