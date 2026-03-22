@@ -40,17 +40,45 @@ function splitTextIntoChunks(text, chunkSize = 1000) {
     return chunks;
 }
 
+// Recursive function to get all HTML files
+function getAllHtmlFiles(dir, fileList = []) {
+    if (!fs.existsSync(dir)) return fileList;
+    
+    const files = fs.readdirSync(dir);
+    
+    files.forEach(file => {
+        const filePath = path.join(dir, file);
+        const stat = fs.statSync(filePath);
+        
+        // Skip hidden folders and node_modules
+        if (file.startsWith('.') || file === 'node_modules') {
+            return;
+        }
+        
+        if (stat.isDirectory()) {
+            getAllHtmlFiles(filePath, fileList);
+        } else if (file.endsWith('.html')) {
+            fileList.push(filePath);
+        }
+    });
+    
+    return fileList;
+}
+
 export const ingestProjectData = async () => {
     try {
         console.log('Starting ingestion...');
 
-        // Define directories to scan
-        const projectRoot = path.join(__dirname, '..'); // unrealmind folder
-        const directoriesToScan = [
-            path.join(projectRoot, 'pages'),
-            path.join(projectRoot, 'frontend'),
-            path.join(projectRoot) // Scan root for index.html
-        ];
+        // Define project root - allow override via env
+        const projectRoot = process.env.PROJECT_ROOT || path.join(__dirname, '..');
+        console.log(`Scanning project root: ${projectRoot}`);
+
+        // Find all HTML files recursively
+        const htmlFiles = getAllHtmlFiles(projectRoot);
+        
+        if (htmlFiles.length === 0) {
+            console.warn('No HTML files found in project root. Check PROJECT_ROOT in .env.');
+        }
 
         // Clear existing PROJECT data to avoid duplicates (Full re-learning for project)
         await KnowledgeChunk.deleteMany({ category: 'project' });
@@ -58,26 +86,9 @@ export const ingestProjectData = async () => {
 
         let processedFiles = 0;
 
-        for (const dir of directoriesToScan) {
-            if (!fs.existsSync(dir)) continue;
-
-            // If it is the root dir, only look for index.html to avoid node_modules etc
-            if (dir === projectRoot) {
-                const rootFile = path.join(dir, 'index.html');
-                if (fs.existsSync(rootFile)) {
-                    await processFile(rootFile);
-                    processedFiles++;
-                }
-                continue;
-            }
-
-            const files = fs.readdirSync(dir);
-            for (const file of files) {
-                if (file.endsWith('.html')) {
-                    await processFile(path.join(dir, file));
-                    processedFiles++;
-                }
-            }
+        for (const filePath of htmlFiles) {
+            await processFile(filePath, projectRoot);
+            processedFiles++;
         }
 
         console.log(`Ingestion complete. Processed ${processedFiles} project files.`);
@@ -89,7 +100,7 @@ export const ingestProjectData = async () => {
     }
 };
 
-async function processFile(filePath) {
+async function processFile(filePath, projectRoot) {
     const content = fs.readFileSync(filePath, 'utf-8');
     const $ = cheerio.load(content);
 
@@ -112,7 +123,7 @@ async function processFile(filePath) {
         // Save to DB
         await KnowledgeChunk.create({
             content: chunk,
-            source: path.relative(path.join(__dirname, '..'), filePath),
+            source: path.relative(projectRoot, filePath),
             title: title,
             embedding: embedding,
             category: 'project'
