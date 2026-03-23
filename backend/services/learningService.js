@@ -86,10 +86,11 @@ export const ingestProjectData = async () => {
 
         let processedFiles = 0;
 
-        for (const filePath of htmlFiles) {
+        // Process files in parallel
+        await Promise.all(htmlFiles.map(async (filePath) => {
             await processFile(filePath, projectRoot);
             processedFiles++;
-        }
+        }));
 
         console.log(`Ingestion complete. Processed ${processedFiles} project files.`);
         return { success: true, processedFiles };
@@ -115,7 +116,8 @@ async function processFile(filePath, projectRoot) {
 
     const chunks = splitTextIntoChunks(text);
 
-    for (const chunk of chunks) {
+    // Process chunks in parallel
+    await Promise.all(chunks.map(async (chunk) => {
         // Generate Embedding
         const result = await model.embedContent(chunk);
         const embedding = result.embedding.values;
@@ -128,7 +130,7 @@ async function processFile(filePath, projectRoot) {
             embedding: embedding,
             category: 'project'
         });
-    }
+    }));
     console.log(`Processed: ${path.basename(filePath)}`);
 }
 
@@ -152,9 +154,8 @@ export const ingestExternalUrl = async (url) => {
         if (!text) throw new Error('No text content found');
 
         const chunks = splitTextIntoChunks(text);
-        let count = 0;
 
-        for (const chunk of chunks) {
+        await Promise.all(chunks.map(async (chunk) => {
             const result = await model.embedContent(chunk);
             const embedding = result.embedding.values;
 
@@ -165,11 +166,10 @@ export const ingestExternalUrl = async (url) => {
                 embedding: embedding,
                 category: 'quantum' // Specialized category
             });
-            count++;
-        }
+        }));
 
-        console.log(`Ingested ${count} chunks from ${url}`);
-        return { success: true, chunks: count, title };
+        console.log(`Ingested ${chunks.length} chunks from ${url}`);
+        return { success: true, chunks: chunks.length, title };
 
     } catch (error) {
         console.error('External ingestion failed:', error);
@@ -182,12 +182,14 @@ export const searchContext = async (query, category = null) => {
         const result = await model.embedContent(query);
         const queryEmbedding = result.embedding.values;
 
-        // Fetch chunks based on category filter
+        // Fetch chunks based on category filter - Optimize by selecting necessary fields and using lean
         const filter = category ? { category } : {};
-        const allChunks = await KnowledgeChunk.find(filter);
+        const allChunks = await KnowledgeChunk.find(filter)
+            .select('embedding content source title category')
+            .lean();
 
         const scoredChunks = allChunks.map(chunk => ({
-            ...chunk.toObject(),
+            ...chunk,
             score: cosineSimilarity(queryEmbedding, chunk.embedding)
         }));
 
