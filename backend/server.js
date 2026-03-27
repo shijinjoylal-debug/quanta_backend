@@ -22,6 +22,7 @@ app.use(cors({
         // or frontend URL, localhost ports, and 127.0.0.1
         const allowedOrigins = [
             process.env.FRONTEND_URL,
+            'https://quanta-nine-gold.vercel.app', // Explicit production URL
             'http://localhost:3000',
             'http://localhost:5173',
             'http://localhost:5500',
@@ -29,7 +30,7 @@ app.use(cors({
         ];
 
         // Be permissive for local development / file:// protocols where origin is "null"
-        if (!origin || allowedOrigins.includes(origin) || origin === 'null') {
+        if (!origin || allowedOrigins.includes(origin) || origin === 'null' || (process.env.NODE_ENV !== 'production' && origin.startsWith('http://localhost:'))) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));

@@ -70,7 +70,14 @@ export const ingestProjectData = async () => {
         console.log('Starting ingestion...');
 
         // Define project root - allow override via env
-        const projectRoot = process.env.PROJECT_ROOT || path.join(__dirname, '..');
+        let projectRoot = process.env.PROJECT_ROOT || path.join(__dirname, '..', '..', 'quanta');
+        
+        // Check if directory exists, if not fallback to server root
+        if (!fs.existsSync(projectRoot)) {
+            console.warn(`PROJECT_ROOT ${projectRoot} does not exist. Falling back to backend root.`);
+            projectRoot = path.join(__dirname, '..');
+        }
+        
         console.log(`Scanning project root: ${projectRoot}`);
 
         // Find all HTML files recursively
