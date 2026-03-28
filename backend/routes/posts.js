@@ -39,6 +39,10 @@ router.get('/', async (req, res) => {
 // POST: Create a new post
 router.post('/', upload.array('images', 4), async (req, res) => {
     try {
+        if (!req.session.user) {
+            return res.status(401).json({ error: 'Unauthorized. Please log in.' });
+        }
+
         const { text } = req.body;
         if (!text) return res.status(400).json({ error: 'Text is required' });
 
@@ -46,7 +50,9 @@ router.post('/', upload.array('images', 4), async (req, res) => {
 
         const newPost = new Post({
             text,
-            images
+            images,
+            author: req.session.user.id,
+            authorName: req.session.user.username
         });
 
         const savedPost = await newPost.save();
@@ -59,8 +65,16 @@ router.post('/', upload.array('images', 4), async (req, res) => {
 // DELETE: Remove a post
 router.delete('/:id', async (req, res) => {
     try {
+        if (!req.session.user) {
+            return res.status(401).json({ error: 'Unauthorized.' });
+        }
+
         const post = await Post.findById(req.params.id);
         if (!post) return res.status(404).json({ error: 'Post not found' });
+
+        if (post.author.toString() !== req.session.user.id) {
+            return res.status(403).json({ error: 'Forbidden. You can only delete your own posts.' });
+        }
 
         // Delete associated images
         post.images.forEach(imagePath => {
