@@ -6,7 +6,22 @@ import ChatHistory from '../models/ChatHistory.js';
 dotenv.config();
 
 const router = express.Router();
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// Validate API Key presence
+if (!process.env.GEMINI_API_KEY) {
+    console.warn('⚠️ GEMINI_API_KEY is missing from environment variables');
+}
+
+// Instantiate genAI outside the route to avoid repeat initialization
+// But handle the case where the key might be missing
+let genAI;
+try {
+    if (process.env.GEMINI_API_KEY) {
+        genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    }
+} catch (err) {
+    console.error('❌ Failed to initialize GoogleGenerativeAI:', err.message);
+}
 
 // POST /api/gemini/chat
 router.post('/chat', async (req, res) => {
@@ -16,6 +31,20 @@ router.post('/chat', async (req, res) => {
 
         if (!userPrompt) {
             return res.status(400).json({ error: 'Prompt is required' });
+        }
+
+        if (!process.env.GEMINI_API_KEY) {
+            return res.status(500).json({ 
+                error: 'Gemini API Key is not configured on the server.',
+                details: 'The GEMINI_API_KEY environment variable is missing.'
+            });
+        }
+
+        if (!genAI) {
+            return res.status(500).json({ 
+                error: 'Gemini AI failed to initialize.',
+                details: 'Check if the API key is valid and the server has network access.'
+            });
         }
 
         const userId = req.session.user?.id;
@@ -40,7 +69,7 @@ router.post('/chat', async (req, res) => {
             }
         }
 
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
         const chat = model.startChat({
             history: history,
@@ -66,8 +95,12 @@ router.post('/chat', async (req, res) => {
 
         res.json({ text: responseText, generated_text: responseText });
     } catch (error) {
-        console.error('Gemini API Error:', error);
-        res.status(500).json({ error: 'Failed to fetch data from Gemini', details: error.message });
+        console.error('Gemini API Error details:', error);
+        res.status(500).json({ 
+            error: 'Failed to fetch data from Gemini', 
+            details: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 });
 
