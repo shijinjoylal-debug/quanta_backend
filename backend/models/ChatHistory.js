@@ -16,7 +16,8 @@ const ChatHistorySchema = new mongoose.Schema({
         text: {
             type: String,
             required: true
-        }
+        },
+        _id: false
     }],
     createdAt: {
         type: Date,

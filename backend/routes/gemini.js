@@ -57,10 +57,10 @@ router.post('/chat', async (req, res) => {
                     .sort({ createdAt: -1 })
                     .limit(20); // 10 pairs of user/model messages
                 
-                // Reverse to get chronological order for Gemini
+                // Reverse to get chronological order for Gemini, and SANITIZE parts
                 history = dbHistory.reverse().map(item => ({
                     role: item.role,
-                    parts: item.parts
+                    parts: item.parts.map(p => ({ text: p.text }))
                 }));
                 console.log(`Loaded ${history.length} messages from history for user ${userId}`);
             } catch (historyError) {
