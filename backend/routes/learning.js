@@ -5,7 +5,8 @@ const router = express.Router();
 
 router.post('/ingest', async (req, res) => {
     try {
-        const result = await ingestProjectData();
+        const { category } = req.body;
+        const result = await ingestProjectData(category || 'project');
         res.json({ message: 'Ingestion successful', data: result });
     } catch (error) {
         console.error(error);
@@ -16,10 +17,10 @@ router.post('/ingest', async (req, res) => {
 // Ingest generic URL
 router.post('/ingest-url', async (req, res) => {
     try {
-        const { url } = req.body;
+        const { url, category } = req.body;
         if (!url) return res.status(400).json({ error: 'URL is required' });
 
-        const result = await ingestExternalUrl(url);
+        const result = await ingestExternalUrl(url, category || 'quantum');
         res.json({ message: 'External ingestion successful', data: result });
     } catch (error) {
         console.error(error);

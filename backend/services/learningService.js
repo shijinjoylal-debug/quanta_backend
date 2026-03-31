@@ -65,12 +65,12 @@ function getAllHtmlFiles(dir, fileList = []) {
     return fileList;
 }
 
-export const ingestProjectData = async () => {
+export const ingestProjectData = async (category = 'project') => {
     try {
-        console.log('Starting ingestion...');
+        console.log(`Starting ingestion for category: ${category}...`);
 
         // Define project root - allow override via env
-        let projectRoot = process.env.PROJECT_ROOT || path.join(__dirname, '..', '..', 'quanta');
+        let projectRoot = process.env.PROJECT_ROOT || path.join(__dirname, '..', '..', '..', 'quanta');
         
         // Check if directory exists, if not fallback to server root
         if (!fs.existsSync(projectRoot)) {
@@ -87,19 +87,19 @@ export const ingestProjectData = async () => {
             console.warn('No HTML files found in project root. Check PROJECT_ROOT in .env.');
         }
 
-        // Clear existing PROJECT data to avoid duplicates (Full re-learning for project)
-        await KnowledgeChunk.deleteMany({ category: 'project' });
-        console.log('Cleared existing project knowledge base.');
+        // Clear existing data for the specified category to avoid duplicates
+        await KnowledgeChunk.deleteMany({ category });
+        console.log(`Cleared existing ${category} knowledge base.`);
 
         let processedFiles = 0;
 
         // Process files in parallel
         await Promise.all(htmlFiles.map(async (filePath) => {
-            await processFile(filePath, projectRoot);
+            await processFile(filePath, projectRoot, category);
             processedFiles++;
         }));
 
-        console.log(`Ingestion complete. Processed ${processedFiles} project files.`);
+        console.log(`Ingestion complete. Processed ${processedFiles} files for ${category}.`);
         return { success: true, processedFiles };
 
     } catch (error) {
@@ -108,7 +108,7 @@ export const ingestProjectData = async () => {
     }
 };
 
-async function processFile(filePath, projectRoot) {
+async function processFile(filePath, projectRoot, category) {
     const content = fs.readFileSync(filePath, 'utf-8');
     const $ = cheerio.load(content);
 
@@ -135,15 +135,15 @@ async function processFile(filePath, projectRoot) {
             source: path.relative(projectRoot, filePath),
             title: title,
             embedding: embedding,
-            category: 'project'
+            category: category
         });
     }));
     console.log(`Processed: ${path.basename(filePath)}`);
 }
 
-export const ingestExternalUrl = async (url) => {
+export const ingestExternalUrl = async (url, category = 'quantum') => {
     try {
-        console.log(`Ingesting external URL: ${url}`);
+        console.log(`Ingesting external URL into category ${category}: ${url}`);
         const response = await fetch(url);
         const html = await response.text();
         const $ = cheerio.load(html);
@@ -171,7 +171,7 @@ export const ingestExternalUrl = async (url) => {
                 source: url,
                 title: title,
                 embedding: embedding,
-                category: 'quantum' // Specialized category
+                category: category // Use passed category
             });
         }));
 

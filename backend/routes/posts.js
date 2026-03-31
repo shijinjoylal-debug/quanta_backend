@@ -78,7 +78,9 @@ router.delete('/:id', async (req, res) => {
 
         // Delete associated images
         post.images.forEach(imagePath => {
-            const fullPath = path.join(__dirname, '..', imagePath);
+            // Ensure path is relative before joining to avoid returning absolute path on Linux
+            const relativePath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+            const fullPath = path.join(__dirname, '..', relativePath);
             if (fs.existsSync(fullPath)) {
                 fs.unlinkSync(fullPath);
             }
