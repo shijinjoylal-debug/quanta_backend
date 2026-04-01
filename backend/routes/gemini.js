@@ -62,6 +62,11 @@ router.post('/chat', async (req, res) => {
                     role: item.role,
                     parts: item.parts.map(p => ({ text: p.text }))
                 }));
+
+                // Gemini requires the first message to be from the 'user' role
+                if (history.length > 0 && history[0].role === 'model') {
+                    history.shift();
+                }
                 console.log(`Loaded ${history.length} messages from history for user ${userId}`);
             } catch (historyError) {
                 console.error('Error fetching history from MongoDB:', historyError);
