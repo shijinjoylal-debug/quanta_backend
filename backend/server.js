@@ -55,17 +55,18 @@ app.use(session({
     cookie: {
         maxAge: 1000 * 60 * 60 * 24 * 31, // 31 days
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production', // true if in production
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+        // Ensure secure and sameSite: 'none' for production (cross-site)
+        secure: process.env.NODE_ENV === 'production' || process.env.SECURE_COOKIE === 'true',
+        sameSite: (process.env.NODE_ENV === 'production' || process.env.SECURE_COOKIE === 'true') ? 'none' : 'lax'
     }
 }));
 
-// Static Uploads
+// Static Uploads - with CORS enabled to allow frontend to fetch images
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
 }
-app.use('/uploads', express.static(uploadsDir));
+app.use('/uploads', cors(), express.static(uploadsDir));
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
